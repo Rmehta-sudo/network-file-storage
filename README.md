@@ -1,33 +1,34 @@
 # Network File Storage (Docs++)
 
-A distributed file system written in C, featuring a central Name Server for metadata/routing, multiple Storage Servers for persistent file storage, and CLI clients for user interaction. Communication uses a compact binary header with JSON payloads.
+Distributed file system written in C. Central Name Server handles metadata and routing, multiple Storage Servers provide persistent file storage, and CLI clients expose the user interface. Communication uses a compact binary header with JSON payloads.
 
 ## Architecture
 
 ```
-Client(s) ──► Name Server (metadata, routing, ACL) ──► Storage Server(s) (file I/O, checkpoints)
+Client(s) --> Name Server (metadata, routing, ACL) --> Storage Server(s) (file I/O, checkpoints)
 ```
 
-- **Name Server** — Central coordinator: file index, access control lists, request routing, health monitoring via heartbeats
-- **Storage Servers** — Persistent file storage, sentence-level locking for concurrent writes, checkpoint/revert support
-- **Client** — CLI interface for file operations (CREATE, READ, WRITE, DELETE, LIST, INFO, etc.)
+- **Name Server** -- central coordinator: file index (trie-based), access control, request routing, heartbeat monitoring
+- **Storage Servers** -- persistent file storage, sentence-level locking for concurrent writes, checkpoint/revert, undo support
+- **Client** -- CLI for file operations (CREATE, READ, WRITE, DELETE, LIST, INFO, UNDO, EXEC, CHECKPOINT, etc.)
 
 ## Key Features
 
-- **Sentence-level locking** — Multiple clients can write to different sentences in the same file simultaneously
-- **Access control** — Owner-managed permissions with request/approve/deny workflow, persisted to disk
-- **Checkpoints** — Tag-based snapshots with list, view, and revert operations
-- **Undo support** — Revert last write operation per file
-- **Heartbeat monitoring** — Name Server detects storage server failures
-- **Persistence** — ACL and file index survive restarts
+- Sentence-level locking -- multiple clients can write different sentences in the same file concurrently
+- Access control -- owner-managed permissions (read/write), persisted to disk
+- Checkpoints -- tag-based snapshots with list, view, and revert
+- Undo -- revert last write per file
+- Heartbeat monitoring -- name server detects storage server failures
+- Persistence -- ACL and file index survive restarts
 
-## Build & Run
+## Build and Run
 
-```bash
+```
 # Build all components
-cd client && make && cd ..
+cd common && make && cd ..
 cd name_server && make && cd ..
 cd storage_server && make && cd ..
+cd client && make && cd ..
 
 # Start (separate terminals)
 ./name_server/name_server 8000
@@ -36,16 +37,14 @@ cd storage_server && make && cd ..
 ./client/client localhost 8000
 ```
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed network diagrams and communication flows.
-See [docs/HOW_TO_RUN.md](docs/HOW_TO_RUN.md) for full setup instructions.
-
 ## Project Structure
 
 ```
-client/          — CLI client (commands.c, main.c)
-name_server/     — Metadata coordinator (file_index.c, main.c)
-storage_server/  — File store (storage_engine.c, main.c)
-common/          — Shared code (protocol, networking, persistence)
-scripts/         — Build, start, stop, and test scripts
-docs/            — Architecture, testing guide, report
+client/          -- CLI client (commands.c, main.c)
+name_server/     -- metadata coordinator (file_index.c with trie + LRU cache, main.c)
+storage_server/  -- file store (storage_engine.c, main.c)
+common/          -- shared code (protocol encoding, networking, persistence)
+scripts/         -- build, start, stop helpers
+docs/            -- architecture notes
+tests/           -- test scripts
 ```
